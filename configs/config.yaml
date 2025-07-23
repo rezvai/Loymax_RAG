@@ -1,0 +1,15 @@
+preprocessing:
+  lowercase: true
+  clean_text:
+    clear_html: true
+    clear_broken_bits: true
+    clear_invisible_spaces: true
+    clear_tabs_and_line_breaks: true
+    clear_multiple_spaces: true
+  check_empty_doc: true
+  remove_duplicates:
+    by_id: true
+    by_hash: true
+  filter_by_length:
+    working: true
+    min_length: 20
