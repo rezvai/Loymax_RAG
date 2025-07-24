@@ -1,137 +1,173 @@
 import hashlib
 import re
 import html
-
-from configs.config import config
+from configs import config, setup_logger
 
 class Preprocessor:
+    """
+    Класс для предобработки текстовых документов:
+    нормализация текста, очистка, удаление дубликатов, фильтрация по длине и проверка на пустые документы.
+    """
+
     def __init__(self):
-        self.config = config['preprocessing']
-        if config['preprocessing']['filter_by_length']['working']:
-            self.min_length = config['preprocessing']['filter_by_length']['min_length']
-    
-    def preprocess_pipeline(self, docs: list[dict]) -> list[dict]:
-        """Выполняет последовательную предобработку списка документов:
-        нормализацию текста, удаление пустых, фильтрацию по длине и дубликатам.
-        
-        Args:
-            docs (list[dict]): список документов (каждый — словарь с ключами 'uid', 'text' и др.).
-        
-        Returns:
-            list[dict]: очищенный список документов.
         """
-        if self.config.get("check_empty_doc", False):
-            if self._is_empty_doc(docs):
-                return None
+        Инициализация конфигурации и параметров предобработки.
+        """
+        self.config = config['preprocessing']
+        if self.config['filter_by_length']['working']:
+            self.min_length = self.config['filter_by_length']['min_length']
+        self.logger = setup_logger("preprocessor.log")
+
+    def preprocess_pipeline(self, docs: list[dict]) -> list[dict]:
+        """
+        Последовательно обрабатывает список документов по шагам из конфигурации:
+        приведение к нижнему регистру, очистка текста, удаление дубликатов и фильтрация по длине.
+
+        Args:
+            docs (list[dict]): список документов (каждый документ — словарь с ключами 'uid', 'text' и др.).
+
+        Returns:
+            list[dict]: список обработанных документов.
+        """
+        self.logger.info(f"Начало предобработки: {len(docs)} документов")
         
+        # Проверка — пуст ли весь датасет
+        if self.config.get("check_empty_doc", False) and not self._is_empty_doc(docs):
+            self.logger.warning("Все документы пустые - возвращается пустой список")
+            return []
+
+        # Приведение к нижнему регистру
         if self.config.get("lowercase", False):
             docs = self._to_lowercase(docs)
-            
+            self.logger.info(f"Успешное приведения документов к нижнему регистру: {len(docs)} документов")
+
+        # Очистка текста
         if self.config.get("clean_text", False):
             docs = self._clean_text(docs)
-        
+            self.logger.info(f"Успешная очистка: {len(docs)} документов")
+
+        # Удаление дубликатов
         if self.config["remove_duplicates"].get('by_id', False):
             docs = self._remove_duplicates_by_id(docs)
+            self.logger.info(f"Успешное удаление дубликатов по ID: {len(docs)} документов")
         if self.config["remove_duplicates"].get('by_hash', False):
             docs = self._remove_duplicates_by_hash(docs)
-                
+            self.logger.info(f"Успешное удаление дубликатов по Hash: {len(docs)} документов")
+
+        # Фильтрация по длине
         if self.config['filter_by_length']['working']:
             docs = self._filter_by_length(docs)
-            
+            self.logger.info(f"Успешная фильтрация по кол-ву символов {self.min_length}: {len(docs)} документов")
+
+        self.logger.info(f"Предоработка завершена. Итог: {len(docs)} документов")
         return docs
-    
+
     def _to_lowercase(self, docs: list[dict]) -> list[dict]:
-        """Приводит тексты всех документов к нижнему регистру.
-
-        Args:
-            docs (list[dict]): список документов (каждый документ содержит поле 'text').
-
-        Returns:
-            list[dict]: тот же список документов, но с текстами в нижнем регистре.
         """
-        for i in range(len(docs)):
-            docs[i]['text'] = docs[i]['text'].lower()
-        return docs
-    
-    def _clean_text(self, docs: list[dict]) -> list[dict]:
-        """Очищает тексты всех документов от HTML, битых символов, невидимых пробелов,
-        табуляций, переводов строк и лишних пробелов (в зависимости от настроек в конфиге).
+        Приводит текст всех документов в списке к нижнему регистру.
 
         Args:
-            docs (list[dict]): список документов (каждый документ содержит поле 'text').
+            docs (list[dict]): список документов (каждый содержит поле 'text').
 
         Returns:
-            list[dict]: тот же список документов, но с очищенными текстами.
+            list[dict]: тот же список документов с изменённым текстом.
+        """
+        for i, doc in enumerate(docs):
+            before_len = len(doc['text'])
+            doc['text'] = doc['text'].lower()
+            self.logger.debug(f"[to_lowercase] Документ {i}: длина {before_len} символов → {len(doc['text'])}")
+        return docs 
+
+    def _clean_text(self, docs: list[dict]) -> list[dict]:
+        """
+        Очищает тексты всех документов от HTML, битых символов, невидимых пробелов,
+        табуляций, переводов строк и лишних пробелов (шаги зависят от конфига).
+
+        Args:
+            docs (list[dict]): список документов (каждый содержит поле 'text').
+
+        Returns:
+            list[dict]: тот же список документов с очищенными текстами.
         """
         clean_text_config = self.config['clean_text']
-        for i in range(len(docs)):
+        for i, doc in enumerate(docs):
+            original_len = len(doc['text'])
             if clean_text_config.get('clear_html', False):
-                docs[i]['text'] = html.unescape(docs[i]['text'])  # декодируем HTML-сущности (&nbsp; и т.д.)
-                docs[i]['text'] = re.sub(r"<.*?>", " ", docs[i]['text'])  # удаляем HTML-теги
+                doc['text'] = html.unescape(doc['text'])
+                doc['text'] = re.sub(r"<.*?>", " ", doc['text'])
             if clean_text_config.get('clear_broken_bits', False):
-                docs[i]['text'] = docs[i]['text'].replace("�", "")  # убираем битые символы
+                doc['text'] = doc['text'].replace("�", "")
             if clean_text_config.get('clear_invisible_spaces', False):
-                docs[i]['text'] = docs[i]['text'].replace("\xa0", " ").replace("\u200b", "")  # удаляем невидимые пробелы
+                doc['text'] = doc['text'].replace("\xa0", " ").replace("\u200b", "")
             if clean_text_config.get('clear_tabs_and_line_breaks', False):
-                docs[i]['text'] = docs[i]['text'].replace("\t", " ").replace("\n", " ")  # убираем табуляцию и переносы строк
+                doc['text'] = doc['text'].replace("\t", " ").replace("\n", " ")
             if clean_text_config.get('clear_multiple_spaces', False):
-                docs[i]['text'] = re.sub(r"\s+", " ", docs[i]['text']).strip()  # нормализуем пробелы
+                doc['text'] = re.sub(r"\s+", " ", doc['text']).strip()
+            self.logger.debug(f"[clean_text] Документ {i}: длина {original_len} → {len(doc['text'])}")
         return docs
-        
+
     def _is_empty_doc(self, docs: list[dict]) -> bool:
-        """Проверяет, содержит ли список документов непустые тексты.
-        
-        Args:
-            doc (list[dict]): список документов (каждый — словарь с полем 'text').
-        
-        Returns:
-            bool: True, если в списке есть хотя бы один непустой текст.
         """
-        return True if sum([len(t['text']) for t in docs]) > 0 else False
-    
-    def _remove_duplicates_by_id(self, doc: list[dict]) -> list[dict]:
-        """Удаляет дубликаты документов по полю 'uid'.
-        
+        Проверяет, есть ли в списке хотя бы один документ с непустым текстом.
+
         Args:
-            doc (list[dict]): список документов.
-        
+            docs (list[dict]): список документов (каждый содержит поле 'text').
+
+        Returns:
+            bool: True, если хотя бы один документ содержит непустой текст; False, если все пустые.
+        """
+        has_text = any(d.get("text") and d["text"].strip() for d in docs)
+        self.logger.debug(f"[is_empty_doc] Найдено непустых документов: {'Да' if has_text else 'Нет'}")
+        return has_text
+
+    def _remove_duplicates_by_id(self, docs: list[dict]) -> list[dict]:
+        """
+        Удаляет дубликаты документов на основе поля 'uid'.
+
+        Args:
+            docs (list[dict]): список документов.
+
         Returns:
             list[dict]: список без дубликатов по 'uid'.
         """
-        exists = set()
-        result = []
-        for i in doc:
-            if i['uid'] not in exists:
-                exists.add(i['uid'])
-                result.append(i)    
-        return result
-    
-    def _remove_duplicates_by_hash(self, doc: list[dict]) -> list[dict]:
-        """Удаляет дубликаты документов по хэшу текста ('text').
-        
+        seen = set()
+        unique_docs = []
+        for doc in docs:
+            if doc['uid'] not in seen:
+                seen.add(doc['uid'])
+                unique_docs.append(doc)
+        self.logger.debug(f"[remove_duplicates_by_id] Удалено {len(docs) - len(unique_docs)} дубликатов (по uid)")
+        return unique_docs
+    def _remove_duplicates_by_hash(self, docs: list[dict]) -> list[dict]:
+        """
+        Удаляет дубликаты документов на основе хэша их текста ('text').
+
         Args:
-            doc (list[dict]): список документов.
-        
+            docs (list[dict]): список документов.
+
         Returns:
             list[dict]: список без дубликатов по содержимому текста.
         """
-        exists = set()
-        result = []
-        for i in doc:
-            text_hash = hashlib.md5(i['text'].encode('utf_8')).hexdigest()
-            if text_hash not in exists:
-                exists.add(text_hash)
-                result.append(i)
-        return result   
-    
-    def _filter_by_length(self, doc: list[dict]) -> list[dict]:
-        """Фильтрует документы, удаляя слишком короткие тексты.
-        
-        Args:
-            doc (list[dict]): список документов.
-            min_length (int): минимальная допустимая длина текста (в символах).
-        
-        Returns:
-            list[dict]: список документов с текстами достаточной длины.
+        seen = set()
+        unique_docs = []
+        for doc in docs:
+            text_hash = hashlib.md5(doc['text'].encode('utf-8')).hexdigest()
+            if text_hash not in seen:
+                seen.add(text_hash)
+                unique_docs.append(doc)
+        self.logger.debug(f"[remove_duplicates_by_hash] Удалено {len(docs) - len(unique_docs)} дубликатов (по тексту)")
+        return unique_docs
+
+    def _filter_by_length(self, docs: list[dict]) -> list[dict]:
         """
-        return [i for i in doc if len(i['text']) > self.min_length]
+        Удаляет документы с длиной текста меньше порогового значения.
+
+        Args:
+            docs (list[dict]): список документов (каждый содержит поле 'text').
+
+        Returns:
+            list[dict]: список документов, где длина текста >= self.min_length.
+        """
+        filtered = [doc for doc in docs if len(doc['text']) >= self.min_length]
+        self.logger.debug(f"[filter_by_length] Удалено {len(docs) - len(filtered)} коротких текстов (<{self.min_length} символов)")
+        return filtered
