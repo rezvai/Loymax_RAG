@@ -14,3 +14,6 @@ preprocessing:
   filter_by_length:
     working: true
     min_length: 20
+
+embedder:
+  model_name: "ai-forever/sbert_large_mt_nlu_ru"
