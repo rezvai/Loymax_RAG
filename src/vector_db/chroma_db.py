@@ -1,20 +1,9 @@
 import chromadb
 from chromadb.config import Settings
-from configs import setup_logger
-import hashlib
 from typing import Any
 
-def calculate_text_hash(text: str) -> list:
-    """
-    Вычисляет md5-хеш строки текста.
-
-    Args:
-        text (str): Исходный текст.
-
-    Returns:
-        str: MD5-хеш текста.
-    """
-    return hashlib.md5(text.encode("utf-8")).hexdigest()
+from configs import setup_logger
+from utils import calculate_text_hash
 
 class Chroma_db:
     """
