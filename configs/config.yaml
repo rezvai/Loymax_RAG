@@ -1,4 +1,5 @@
 preprocessing:
+  quality_check: true
   lowercase: true
   clean_text:
     clear_html: true
