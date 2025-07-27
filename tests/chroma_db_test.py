@@ -26,7 +26,7 @@ def test_add_and_query(db: Chroma_db) -> None:
     metadatas = [{"source": "test"} for _ in ids]
 
     db.add_unique_by_hash(ids, texts, embeddings, metadatas)
-    assert len(db._get_existing_ids()) == 2
+    assert len(db.get_existing_ids()) == 2
 
     result = db.query(embeddings[0], top_k=2)
     assert "ids" in result
@@ -45,7 +45,7 @@ def test_duplicate_by_hash(db: Chroma_db) -> None:
     metadatas = [{"source": "dup"}]
 
     db.add_unique_by_hash(ids, texts, embeddings, metadatas)
-    assert len(db._get_existing_ids()) == 2
+    assert len(db.get_existing_ids()) == 2
 
 def test_delete_and_clear(db: Chroma_db) -> None:
     """
@@ -55,9 +55,9 @@ def test_delete_and_clear(db: Chroma_db) -> None:
         db (Chroma_db): Тестовая база Chroma_db.
     """
     db.delete_by_id(["1"])
-    assert "1" not in db._get_existing_ids()
+    assert "1" not in db.get_existing_ids()
     db.clear()
-    assert len(db._get_existing_ids()) == 0
+    assert len(db.get_existing_ids()) == 0
 
 def test_hash_function() -> None:
     """

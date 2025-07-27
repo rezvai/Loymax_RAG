@@ -37,17 +37,14 @@ class Preprocessor:
 
         self.logger.info(f"Начало предобработки: {len(docs)} документов")
 
-        # Приведение к нижнему регистру
         if self.config.get("lowercase", False):
             docs = self._to_lowercase(docs)
             self.logger.info(f"Успешное приведения документов к нижнему регистру: {len(docs)} документов")
 
-        # Очистка текста
         if self.config.get("clean_text", False):
             docs = self._clean_text(docs)
             self.logger.info(f"Успешная очистка: {len(docs)} документов")
 
-        # Удаление дубликатов
         if self.config["remove_duplicates"].get('by_id', False):
             docs = self._remove_duplicates_by_id(docs)
             self.logger.info(f"Успешное удаление дубликатов по ID: {len(docs)} документов")
@@ -55,7 +52,6 @@ class Preprocessor:
             docs = self._remove_duplicates_by_hash(docs)
             self.logger.info(f"Успешное удаление дубликатов по Hash: {len(docs)} документов")
 
-        # Фильтрация по длине
         if self.config['filter_by_length']['working']:
             docs = self._filter_by_length(docs)
             self.logger.info(f"Успешная фильтрация по кол-ву символов {self.min_length}: {len(docs)} документов")

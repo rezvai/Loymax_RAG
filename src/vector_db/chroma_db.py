@@ -3,7 +3,7 @@ from chromadb.config import Settings
 from typing import Any
 
 from configs import setup_logger
-from utils import calculate_text_hash
+from src.utils import calculate_text_hash
 
 class Chroma_db:
     """
@@ -21,7 +21,7 @@ class Chroma_db:
         self.logger = setup_logger("chroma_db.log")
         self.logger.info(f"Chroma DB инициализирована, путь: {persist_dir}")
         
-    def _get_existing_ids(self) -> list[str]:
+    def get_existing_ids(self) -> list[str]:
         """
         Получает все id, уже сохранённые в коллекции.
 
@@ -109,7 +109,7 @@ class Chroma_db:
             int: Оставшееся число документов в коллекции.
         """
         self.collection.delete(ids=ids)
-        remaining = len(self._get_existing_ids())
+        remaining = len(self.get_existing_ids())
         self.logger.info(f"Удалено {len(ids)} документов. В коллекции осталось: {remaining}")
         
         return remaining
@@ -118,6 +118,6 @@ class Chroma_db:
         """
         Полностью очищает коллекцию от всех документов.
         """
-        all_ids = self._get_existing_ids()
+        all_ids = self.get_existing_ids()
         self.collection.delete(ids=all_ids)
         self.logger.info(f"Коллекция полностью очищена. Было удалено: {len(all_ids)}")
