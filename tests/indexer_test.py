@@ -1,63 +1,65 @@
 import pytest
-import numpy as np
-from src.indexing import Embedder
+from src.indexing import Indexer
 
-@pytest.fixture(scope="module")
-def embedder() -> Embedder:
+@pytest.fixture
+def indexer() -> Indexer:
     """
-    Фикстура для инициализации Embedder один раз на модуль.
+    Фикстура для инициализации чистого Indexer перед каждым тестом.
 
     Returns:
-        Embedder: Экземпляр класса Embedder.
+        Indexer: Экземпляр класса Indexer.
     """
-    return Embedder()
+    return Indexer()
 
-def test_embedder_shape(embedder: Embedder) -> None:
+def test_index_simple(indexer: Indexer) -> None:
     """
-    Проверяет, что encode возвращает массив правильной формы для нескольких текстов.
+    Проверяет индексацию списка документов только с uid и text.
 
     Args:
-        embedder (Embedder): Экземпляр Embedder.
+        indexer (Indexer): Экземпляр класса Indexer.
+
+    Returns:
+        None
     """
-    texts = [
-        "Пример первого текста.",
-        "Второй текст, тоже по-русски."
+    docs = [
+        {"uid": "1", "text": "Документ 1, этот текст точно длиннее 20 символов."},
+        {"uid": "2", "text": "Документ 2, тоже не короткий, всё хорошо!"},
     ]
-    embeddings = embedder.encode(texts)
-    assert isinstance(embeddings, np.ndarray)
-    assert embeddings.shape[0] == len(texts)
-    assert embeddings.shape[1] > 0  
+    added = indexer.index(docs)
+    assert added == 2
 
-def test_embedder_empty_list(embedder: Embedder) -> None:
+def test_index_with_metadatas(indexer: Indexer) -> None:
     """
-    Проверяет, что при пустом списке текстов encode возвращает массив формы (0, embedding_dim).
+    Проверяет индексацию документов с дополнительными метаданными.
 
     Args:
-        embedder (Embedder): Экземпляр Embedder.
-    """
-    embeddings = embedder.encode([])
-    assert isinstance(embeddings, np.ndarray)
-    assert embeddings.shape[0] == 0
+        indexer (Indexer): Экземпляр класса Indexer.
 
-def test_embedder_unicode_support(embedder: Embedder) -> None:
+    Returns:
+        None
     """
-    Проверяет поддержку Unicode: русский, emoji, китайский.
+    docs = [
+        {"uid": "10", "text": "Документ A, метаданные, длинный текст.", "source": "test1"},
+        {"uid": "20", "text": "Документ B, тоже длинный, для теста.", "source": "test2"},
+    ]
+    added = indexer.index(docs)
+    assert added == 2
 
-    Args:
-        embedder (Embedder): Экземпляр Embedder.
+def test_no_duplicates(indexer: Indexer) -> None:
     """
-    texts = ["тест на русском", "emoji 😀", "китайский 中文"]
-    embeddings = embedder.encode(texts)
-    assert embeddings.shape[0] == len(texts)
-    assert not np.isnan(embeddings).any()  
-
-def test_embedder_repeatability(embedder: Embedder) -> None:
-    """
-    Проверяет детерминированность: одинаковый текст должен давать одинаковый эмбеддинг.
+    Проверяет, что повторная индексация не создаёт дубликатов по uid/text.
 
     Args:
-        embedder (Embedder): Экземпляр Embedder.
+        indexer (Indexer): Экземпляр класса Indexer.
+
+    Returns:
+        None
     """
-    text = ["Один и тот же текст."] * 2
-    embeddings = embedder.encode(text)
-    np.testing.assert_allclose(embeddings[0], embeddings[1], rtol=1e-5, atol=1e-6)
+    docs = [
+        {"uid": "X", "text": "Повторяющийся текст для проверки дублей, 123456!"},
+        {"uid": "Y", "text": "Повторяющийся текст для проверки дублей, 123456!"},
+    ]
+    added_1 = indexer.index(docs)
+    added_2 = indexer.index(docs)
+    assert added_1 == 1 
+    assert added_2 == 0  
