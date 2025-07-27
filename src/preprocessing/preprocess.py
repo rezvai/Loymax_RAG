@@ -122,9 +122,8 @@ class Preprocessor:
             list[dict]: тот же список документов с изменённым текстом.
         """
         for i, doc in enumerate(docs):
-            before_len = len(doc['text'])
             doc['text'] = doc['text'].lower()
-            self.logger.debug(f"[to_lowercase] Документ {i}: длина {before_len} символов → {len(doc['text'])}")
+            self.logger.debug(f"[to_lowercase] Документ {i}")
         return docs 
 
     def _clean_text(self, docs: list[dict]) -> list[dict]:

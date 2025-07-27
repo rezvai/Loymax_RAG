@@ -75,6 +75,7 @@ class Chroma_db:
         if new_ids:
             self.collection.add(
                 ids=new_ids,
+                documents=[texts[i] for i in range(len(new_ids))],
                 embeddings=new_embeddings,
                 metadatas=new_metadatas
             )

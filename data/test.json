@@ -1,0 +1,26 @@
+[
+    {
+        "uid": "doc1",
+        "text": "Loymax — это платформа для программ лояльности и управления клиентским опытом.",
+        "category": "company_info",
+        "source": "официальный сайт"
+    },
+    {
+        "uid": "doc2",
+        "text": "Альберт Эйнштейн был известным физиком-теоретиком, лауреатом Нобелевской премии.",
+        "category": "biography",
+        "source": "wikipedia"
+    },
+    {
+        "uid": "doc3",
+        "text": "Смысл жизни — философский вопрос, не имеющий единого ответа. Каждый человек ищет свой смысл.",
+        "category": "philosophy",
+        "source": "encyclopedia"
+    },
+    {
+        "uid": "doc4",
+        "text": "Смысл жизни в конфетах.",
+        "category": "philosophy",
+        "source": "encyclopedia"
+    }
+]

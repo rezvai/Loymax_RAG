@@ -52,13 +52,13 @@ class Generator:
             return "Модель не инициализирована"
         
         self.logger.debug("Начало генерации ответа.")
-        
         question_emb = self.embedder.encode(question)
         results = self.vector_db.query(question_emb, self.top_k)
-        print(results)
         docs = results.get("documents", [[]])[0]
-        self.logger.debug(f"Найдено {len(docs)} релевантных чанков.")
-        context = "\n".join(docs)
+        relevant_chunks = [text for text in docs if isinstance(text, str) and text.strip()]
+        
+        self.logger.debug(f"Найдено {len(relevant_chunks)} релевантных чанков.")
+        context = "\n".join(relevant_chunks)
         
         prompt = self.config['prompt']
         

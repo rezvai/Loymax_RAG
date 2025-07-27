@@ -39,8 +39,8 @@ class Indexer:
 
         valid_uids = set(doc["uid"] for doc in processed_docs)
         valid_metadatas = [meta for meta in metadatas if meta["uid"] in valid_uids]
-
         texts = [doc["text"] for doc in processed_docs]
+        
         embeddings = self.embedder.encode(texts)
         ids = [doc["uid"] for doc in processed_docs]
 
