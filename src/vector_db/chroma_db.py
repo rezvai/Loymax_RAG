@@ -120,5 +120,8 @@ class Chroma_db:
         Полностью очищает коллекцию от всех документов.
         """
         all_ids = self.get_existing_ids()
-        self.collection.delete(ids=all_ids)
-        self.logger.info(f"Коллекция полностью очищена. Было удалено: {len(all_ids)}")
+        if all_ids:
+            self.collection.delete(ids=all_ids)
+            self.logger.info(f"Коллекция полностью очищена. Было удалено: {len(all_ids)}")
+        else:
+            self.logger.info("Коллекция уже пуста. Удалять нечего.")
