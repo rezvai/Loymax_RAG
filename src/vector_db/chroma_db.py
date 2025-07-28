@@ -26,7 +26,7 @@ class Chroma_db:
         Получает все id, уже сохранённые в коллекции.
 
         Returns:
-            set: Множество строковых id.
+            list[str]: Список строковых id.
         """
         all_ids = self.collection.get(include=["documents"])["ids"]
         self.logger.debug(f"Текущее количество документов в базе: {len(all_ids)}")
@@ -56,10 +56,10 @@ class Chroma_db:
         Добавляет только уникальные документы по хешу текста (text_hash).
 
         Args:
-            ids (List[str]): Уникальные идентификаторы документов.
-            texts (List[str]): Исходные тексты документов.
-            embeddings (List[List[float]]): Списки эмбеддингов.
-            metadatas (List[Dict[str, Any]]): Метаданные документов (dict на документ).
+            ids (list[str]): Уникальные идентификаторы документов.
+            texts (list[str]): Исходные тексты документов.
+            embeddings (list[list[float]]): Эмбеддинги документов.
+            metadatas (list[dict[str, Any]]): Метаданные документов (по одному словарю на документ).
         """
         existing_hashes = self._get_existing_hashes()
         new_ids, new_embeddings, new_metadatas = [], [], []
@@ -104,7 +104,7 @@ class Chroma_db:
         Удаляет документы по их id.
 
         Args:
-            ids (List[str]): Список id для удаления.
+            ids (list[str]): Список id для удаления.
 
         Returns:
             int: Оставшееся число документов в коллекции.

@@ -68,18 +68,18 @@ async def index_documents_file(file: UploadFile = File(...)):
 async def generate_answer(query: QueryRequest):
     """
     Генерирует ответ на вопрос пользователя на основе RAG-архитектуры.
-    
+
     Args:
         query (QueryRequest): Объект с вопросом пользователя.
-    
+
     Raises:
         HTTPException: Если не удалось сгенерировать ответ.
-    
+
     Returns:
         dict: Ответ модели (LLM) на заданный вопрос.
     """
     answer = generator.generate(query.question)
     
     if not answer:
-        raise HTTPException(status_code=500, detail="Ошибка генерации овтета")
+        raise HTTPException(status_code=500, detail="Ошибка генерации ответа")
     return {"answer": answer}

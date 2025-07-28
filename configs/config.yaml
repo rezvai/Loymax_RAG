@@ -1,31 +1,31 @@
 preprocessing:
-  quality_check: true
-  lowercase: true
-  clean_text:
+  quality_check: true          # Проверка структуры и пустых текстов перед обработкой
+  lowercase: true              # Приведение текста к нижнему регистру
+  clean_text:                  # Шаги очистки текста
     clear_html: true
     clear_broken_bits: true
     clear_invisible_spaces: true
     clear_tabs_and_line_breaks: true
     clear_multiple_spaces: true
-  check_empty_doc: true
+  check_empty_doc: true        # Исключать документы с пустым текстом
   remove_duplicates:
-    by_id: true
-    by_hash: true
+    by_id: true                # Удаление дублей по uid
+    by_hash: true              # Удаление дублей по хешу текста
   filter_by_length:
-    working: true
-    min_length: 20
+    working: true              # Фильтровать короткие тексты
+    min_length: 20             # Минимальная длина текста (символов)
 
 embedder:
-  model_name: "ai-forever/sbert_large_mt_nlu_ru"
+  model_name: "ai-forever/sbert_large_mt_nlu_ru"  # Модель SentenceTransformer
 
 answer_generator:
-  llm_model_name: "gpt-4o"
-  prompt: |
+  llm_model_name: "gpt-4o"     # LLM-модель для генерации ответов
+  prompt: |                    # Инструкция для модели (ответ строго по контексту)
     Ответь на вопрос, используя только приведённый ниже контекст.
-    Не используй никаких внешних знаний, домыслов или информации вне этого контекста.
-    Если в контексте нет данных для ответа на вопрос, просто скажи: "В предоставленном контексте нет информации для ответа на этот вопрос".
-    Не пытайся угадывать или придумывать ответ.
-  top_k: 5
+    Не используй внешние знания или догадки.
+    Если в контексте нет данных для ответа на вопрос, скажи: 
+    "В предоставленном контексте нет информации для ответа на этот вопрос".
+  top_k: 5                     # Кол-во релевантных фрагментов из базы
 
 api_model_names:
   openai_models:

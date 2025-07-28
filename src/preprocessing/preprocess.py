@@ -6,9 +6,9 @@ from configs import config, setup_logger
 class Preprocessor:
     """
     Класс для предобработки текстовых документов:
-    нормализация текста, очистка, удаление дубликатов, фильтрация по длине и проверка на пустые документы.
+    нормализация текста, очистка, удаление дубликатов, фильтрация по длине 
+    и проверка на пустые документы. Конкретные шаги зависят от конфигурации.
     """
-
     def __init__(self):
         """
         Инициализация конфигурации и параметров предобработки.
@@ -22,12 +22,14 @@ class Preprocessor:
         """
         Последовательно обрабатывает список документов по шагам из конфигурации:
         приведение к нижнему регистру, очистка текста, удаление дубликатов и фильтрация по длине.
+        Если проверка качества не пройдена (все пустые, битые или неверной структуры),
+        возвращается пустой список.
 
         Args:
             docs (list[dict]): список документов (каждый документ — словарь с ключами 'uid', 'text' и др.).
 
         Returns:
-            list[dict]: список обработанных документов.
+            list[dict]: список обработанных документов (может быть пустым).
         """
         if self.config.get("quality_check", False):
             docs_quality = self._quality_check(docs)
@@ -62,29 +64,30 @@ class Preprocessor:
     def _quality_check(self, docs: list[dict]) -> bool:
         """
         Проверяет качество данных перед препроцессингом:
-        - проверка структуры (uid, text),
+        - проверка структуры (наличие 'uid', 'text'),
         - поиск пустых текстов,
         - подсчёт дублей,
         - подсчёт коротких текстов,
         - подсчёт битых символов.
-        
-        Логирует статистику. Возвращает False, если данные непригодны для обработки.
-        
+
+        Логирует статистику. Возвращает False, если:
+          * найдены документы с неверной структурой,
+          * все документы пустые,
+          * пайплайн следует остановить.
+
         Args:
             docs (list[dict]): список документов (каждый должен содержать 'uid' и 'text').
 
         Returns:
-            bool: True — данные пригодны для обработки, False — стоит остановить пайплайн.
+            bool: True — данные пригодны для обработки, False — обработка прерывается.
         """
         self.logger.info(f"Проверка качества данных: всего {len(docs)} документов")
 
-        # Проверка структуры 
         invalid_docs = [d for d in docs if not isinstance(d, dict) or "uid" not in d or "text" not in d]
         if invalid_docs:
             self.logger.error(f"Документы с неверной структурой: {len(invalid_docs)}")
             return False  
 
-        # Проверка пустых текстов
         empty_docs = [d for d in docs if not d["text"].strip()]
         if empty_docs:
             self.logger.warning(f"Пустые документы: {len(empty_docs)}")
@@ -93,16 +96,13 @@ class Preprocessor:
             self.logger.error("Все документы пустые — пайплайн остановлен")
             return False
 
-        # Подсчет дублей
         uid_dupes = len(docs) - len({d["uid"] for d in docs})
         text_dupes = len(docs) - len({d["text"] for d in docs})
         self.logger.info(f"Дубликаты: {uid_dupes} по UID, {text_dupes} по тексту")
 
-        # Подсчет коротких текстов
         short_docs = [d for d in docs if len(d["text"]) < self.min_length]
         self.logger.info(f"Короткие тексты (<{self.min_length} символов): {len(short_docs)}")
 
-        # Подсчет битых символов
         broken_count = sum(d["text"].count("�") for d in docs)
         if broken_count:
             self.logger.warning(f"Найдено битых символов: {broken_count}")
@@ -129,13 +129,14 @@ class Preprocessor:
     def _clean_text(self, docs: list[dict]) -> list[dict]:
         """
         Очищает тексты всех документов от HTML, битых символов, невидимых пробелов,
-        табуляций, переводов строк и лишних пробелов (шаги зависят от конфига).
+        табуляций, переводов строк и лишних пробелов.
+        Конкретные шаги очистки управляются конфигурацией `clean_text`.
 
         Args:
             docs (list[dict]): список документов (каждый содержит поле 'text').
 
         Returns:
-            list[dict]: тот же список документов с очищенными текстами.
+            list[dict]: список документов с очищенными текстами.
         """
         clean_text_config = self.config['clean_text']
         for i, doc in enumerate(docs):
@@ -195,7 +196,8 @@ class Preprocessor:
 
     def _filter_by_length(self, docs: list[dict]) -> list[dict]:
         """
-        Удаляет документы с длиной текста меньше порогового значения.
+        Удаляет документы с длиной текста меньше минимальной,
+        указанной в конфигурации `filter_by_length.min_length`.
 
         Args:
             docs (list[dict]): список документов (каждый содержит поле 'text').

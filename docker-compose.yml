@@ -5,8 +5,6 @@ services:
       dockerfile: dockerfiles/Dockerfile.api
     ports:
       - "8000:8000"
-    volumes:
-      - ./vector_db:/app/vector_db
     env_file:
       - configs/.env
     restart: unless-stopped
